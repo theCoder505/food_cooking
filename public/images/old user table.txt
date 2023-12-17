@@ -1,0 +1,449 @@
+old user table 
+import React, { useEffect, useState } from 'react'
+import BlankCard from '../../src/components/shared/BlankCard';
+import { Box, Button, CardContent, IconButton, Typography, Chip, Tooltip, MenuItem, Select, SelectChangeEvent } from '@mui/material';
+import { IconEdit, IconTrash } from '@tabler/icons-react';
+import PageContainer from '../../src/components/container/PageContainer';
+import { AppState, useDispatch, useSelector } from '../../src/store/Store';
+import { getUsers, updateUserStatus } from '../../src/store/user/Userslice';
+import UserRegisterDialog from '../../src/dialogs/UserRegisterDialog';
+import { IUsersResponse } from '../../src/types/user';
+import { GridColDef, GridRenderCellParams, GridValueGetterParams } from '@mui/x-data-grid';
+import { CustomDataTable } from '../../src/components/tables/CustomDataTable';
+import UserTypeRegisterDialog from '../../src/dialogs/UserTypeRegisterDialog';
+import BallotOutlinedIcon from '@mui/icons-material/BallotOutlined';
+import Router from "next/router";
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import UserDetailsDialog from '../../src/dialogs/UserDetailsDialog';
+const tRecords = 15
+const dummyUserData = [
+    {
+      _id: 1,
+      image: 'user1.jpg',
+      username: 'john_doe',
+      mobilenumber: '123-456-7890',
+      email: 'john.doe@example.com',
+      position: 'Chef',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 2,
+      image: 'user2.jpg',
+      username: 'jane_smith',
+      mobilenumber: '987-654-3210',
+      email: 'jane.smith@example.com',
+      position: 'Waiter',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 3,
+      image: 'user3.jpg',
+      username: 'mike_jones',
+      mobilenumber: '555-123-4567',
+      email: 'mike.jones@example.com',
+      position: 'Caption',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 4,
+      image: 'user4.jpg',
+      username: 'sarah_smith',
+      mobilenumber: '888-987-6543',
+      email: 'sarah.smith@example.com',
+      position: 'Waiter',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 5,
+      image: 'user5.jpg',
+      username: 'david_brown',
+      mobilenumber: '777-555-8888',
+      email: 'david.brown@example.com',
+      position: 'Caption',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 6,
+      image: 'user6.jpg',
+      username: 'emily_wilson',
+      mobilenumber: '123-555-9999',
+      email: 'emily.wilson@example.com',
+      position: 'Worker',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 7,
+      image: 'user7.jpg',
+      username: 'peter_johnson',
+      mobilenumber: '333-111-2222',
+      email: 'peter.johnson@example.com',
+      position: 'Chef',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 8,
+      image: 'user8.jpg',
+      username: 'lisa_anderson',
+      mobilenumber: '222-444-6666',
+      email: 'lisa.anderson@example.com',
+      position: 'Chef',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 9,
+      image: 'user9.jpg',
+      username: 'william_thomas',
+      mobilenumber: '999-888-7777',
+      email: 'william.thomas@example.com',
+      position: 'Worker',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 10,
+      image: 'user10.jpg',
+      username: 'olivia_martin',
+      mobilenumber: '666-222-5555',
+      email: 'olivia.martin@example.com',
+      position: 'Waiter',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 11,
+      image: 'user11.jpg',
+      username: 'james_clark',
+      mobilenumber: '111-333-8888',
+      email: 'james.clark@example.com',
+      position: 'Chef',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 12,
+      image: 'user12.jpg',
+      username: 'emma_morris',
+      mobilenumber: '444-666-8888',
+      email: 'emma.morris@example.com',
+      position: 'Chef',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 13,
+      image: 'user13.jpg',
+      username: 'jack_wilson',
+      mobilenumber: '888-777-3333',
+      email: 'jack.wilson@example.com',
+      position: 'Worker',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 14,
+      image: 'user14.jpg',
+      username: 'grace_jones',
+      mobilenumber: '777-999-2222',
+      email: 'grace.jones@example.com',
+      position: 'Waiter',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+    {
+      _id: 15,
+      image: 'user15.jpg',
+      username: 'daniel_taylor',
+      mobilenumber: '555-777-1111',
+      email: 'daniel.taylor@example.com',
+      position: 'Chef',
+      department: 'Kitchen',
+      joiningdate: '18-08-2023',
+    },
+  ];  
+export interface IPageInfo {
+    pageSize: number,
+    page: number,
+}
+
+const UserList = () => {
+    const dispatch = useDispatch();
+    const userState = useSelector((state: AppState) => state.userReducer.usersData)
+    const allDealer = useSelector((state: AppState) => state.userReducer.getAllDealerData || []);
+    const allDriver = useSelector((state: AppState) => state.userReducer.getAllDriverData || []);
+    const [loading, setLoading] = useState(false);
+    const [user, setUser] = useState<IUsersResponse['result'][0] | null>(null)
+    const [paginationModel, setPaginationModel] = useState<IPageInfo>({
+        pageSize: 7,
+        page: 0,
+    });
+
+    const [openUserRegisterDialog, setUserRegisterDialog] = useState<boolean>(false)
+    const [openUserTypeRegisterDialog, setUserTypeRegisterDialog] = useState<boolean>(false)
+    const [openUserDetailsDialog, setOpenUserDetailsDialog] = useState<boolean>(false)
+    const [userDetails, setUserDetails] = useState(null)
+    const [selectedOption, setSelectedOption] = useState<string>('select');
+    
+    useEffect(() => {
+        dispatch(getUsers(paginationModel.pageSize, paginationModel.page + 1))
+    }, [paginationModel])
+
+    const handleOpenEditDialog = (user: IUsersResponse['result'][0]) => {
+        setUser(user)
+        setUserRegisterDialog(true)
+    }
+
+    const handleUserIsActive = (user: IUsersResponse['result'][0]) => {
+        if (user.is_active) {
+            dispatch(updateUserStatus({ _id: user._id, is_active: false }, paginationModel))
+        } else {
+            dispatch(updateUserStatus({ _id: user._id, is_active: true }, paginationModel))
+        }
+    }
+
+    const handleChange = (event: SelectChangeEvent<string>) => {
+        setSelectedOption(event.target.value);
+      };
+
+    const columns: GridColDef[] = [
+        {
+            field: '',
+            headerName: 'Id',
+            flex: 0.5,
+            minWidth: 100,
+            align: 'center',
+            headerAlign: 'center',
+            sortable: false,
+            filterable: false,
+            valueGetter(params: GridValueGetterParams) {
+                return `${params.api.getRowIndexRelativeToVisibleRows(params.rowNode.id) + 1}`
+            },
+        },
+        {
+            field: 'image',
+            headerName: 'Image',
+            flex: 1.0,
+            minWidth: 100,
+            align: 'center',
+            headerAlign: 'center',
+        },
+        {
+            field: 'username',
+            headerName: 'User Name',
+            flex: 1.0,
+            minWidth: 100,
+        },
+        {
+            field: 'mobilenumber',
+            headerName: 'Mobile Number',
+            flex: 1,
+            minWidth: 100,
+            align: 'center',
+            headerAlign: 'center',
+        },
+        {
+            field: 'email',
+            headerName: 'Email',
+            flex: 1.5,
+            minWidth: 100,
+            sortable: true,
+            align: 'center',
+            headerAlign: 'center',
+        },
+        {
+            field: "position",
+            headerName: 'Position',
+            flex: 1,
+            minWidth: 100,
+            align: 'center',
+            headerAlign: 'center',
+            sortable: false,
+            filterable: false,
+            renderCell: (params: GridRenderCellParams) => (
+                <Chip
+                    label={params.row?.position ? params.row?.position : params.row?.is_active ? "Active" : "Deactive"}
+                    sx={{
+                        backgroundColor:
+                            params.row?.position
+                                ? (theme) => theme.palette.error.light
+                                : params.row?.position
+                                    ? (theme) => theme.palette.success.light
+                                    : (theme) => theme.palette.warning.light,
+                        color:
+                            params.row?.position
+                                ? (theme) => theme.palette.error.main
+                                : params.row?.position
+                                    ? (theme) => theme.palette.success.main
+                                    : (theme) => theme.palette.warning.main,
+                    }}
+                    // onClick={() => { handleUserIsActive(params.row) }}
+                />
+            ),
+        },
+        {
+            field: 'department',
+            headerName: 'Department',
+            flex: 0.5,
+            minWidth: 100,
+            sortable: true,
+            align: 'center',
+            headerAlign: 'center',
+        },
+        {
+            field: 'joiningdate',
+            headerName: 'Joining Date',
+            flex: 0.5,
+            minWidth: 100,
+            sortable: true,
+            align: 'center',
+            headerAlign: 'center',
+        },
+        // {
+        //     field: "status",
+        //     headerName: 'Status',
+        //     flex: 1,
+        //     minWidth: 100,
+        //     align: 'center',
+        //     headerAlign: 'center',
+        //     sortable: false,
+        //     filterable: false,
+        //     renderCell: (params: GridRenderCellParams) => (
+        //         <Chip
+        //             label={params.row?.is_deleted ? "Deleted" : params.row?.is_active ? "Active" : "Deactive"}
+        //             sx={{
+        //                 backgroundColor:
+        //                     params.row?.is_deleted
+        //                         ? (theme) => theme.palette.error.light
+        //                         : params.row?.is_active
+        //                             ? (theme) => theme.palette.success.light
+        //                             : (theme) => theme.palette.warning.light,
+        //                 color:
+        //                     params.row?.is_deleted
+        //                         ? (theme) => theme.palette.error.main
+        //                         : params.row?.is_active
+        //                             ? (theme) => theme.palette.success.main
+        //                             : (theme) => theme.palette.warning.main,
+        //             }}
+        //             onClick={() => { handleUserIsActive(params.row) }}
+        //         />
+        //     ),
+        // },
+        {
+            field: "action",
+            headerName: 'Actions',
+            flex: 1,
+            minWidth: 100,
+            align: 'center',
+            headerAlign: 'center',
+            sortable: false,
+            filterable: false,
+            renderCell: (params: GridRenderCellParams) => (
+                <Box>
+                    {/* <Tooltip title="View Details">
+                        <IconButton onClick={() => { setUserDetails(params?.row); setOpenUserDetailsDialog(true) }}>
+                            <VisibilityOutlinedIcon width={18} />
+                        </IconButton>
+                    </Tooltip> */}
+                    {/* <Tooltip title="Orders" onClick={() => {
+                        ""
+                        Router?.router?.push(`/user-orders?id=${params?.row?.notion_id}&type=${params?.row?.usertype}&name=${params?.row?.name}`)
+                    }}>
+                        <IconButton>
+                            <BallotOutlinedIcon width={18} />
+                        </IconButton>
+                    </Tooltip> */}
+                    <Tooltip title="Edit">
+                        {/* <IconButton onClick={() => { handleOpenEditDialog(params.row) }}> */}
+                        <IconButton onClick={() => {""}}>
+                            <IconEdit width={18} />
+                        </IconButton>
+                    </Tooltip>
+                    <IconButton>
+                        <IconTrash width={18} />
+                    </IconButton>
+                </Box>
+            ),
+        },
+    ];
+
+    return (
+        <>
+            <PageContainer>
+                <BlankCard sx={{ height: "100%" }}>
+                    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Box display={'flex'} justifyContent={'space-between'} alignItems={'center'}>
+                            <Typography variant='h4'>User List</Typography>
+                            <Box display="flex" gap={2}  justifyContent={'space-between'} alignItems="center" >
+                            <Select value={selectedOption} onChange={handleChange}>
+                            <MenuItem value="select" disabled>Select Department</MenuItem>
+                              <MenuItem value="option1">Option 1</MenuItem>
+                              <MenuItem value="option2">Option 2</MenuItem>
+                              <MenuItem value="option3">Option 3</MenuItem>
+                            </Select>
+                            <Button variant='contained' size='small' onClick={() => { setUserTypeRegisterDialog(true) }}>
+                                Filter
+                            </Button>
+                            <Button variant='contained' size='small' onClick={() => { setUserTypeRegisterDialog(true) }}>
+                                Add User
+                            </Button>
+                            </Box>
+                        </Box>
+                        <Box>
+                            <CustomDataTable
+                                // loading={userState.loading}
+                                columns={columns}
+                                // rows={userState.data.result && userState.data.result || []}
+                                rows={ dummyUserData|| []}
+                                getRowId={(row) => row?._id}
+                                pageSizeOptions={[7, 14, 20]}
+                                paginationModel={paginationModel}
+                                paginationMode='server'
+                                onPaginationModelChange={setPaginationModel}
+                                // rowCount={userState.data?.pageInfo?.totalRecords}
+                                rowCount={tRecords}
+                                disableRowSelectionOnClick
+                                disableColumnSelector
+                                autoHeight
+                            />
+                        </Box>
+                    </CardContent>
+                </BlankCard>
+            </PageContainer>
+
+            <UserTypeRegisterDialog
+                open={openUserTypeRegisterDialog}
+                setOpen={setUserTypeRegisterDialog}
+                setUserOpen={setUserRegisterDialog}
+                user={user}
+                setUser={setUser}
+            />
+
+            <UserRegisterDialog
+                pageInfo={paginationModel}
+                user={user}
+                setUser={setUser}
+                open={openUserRegisterDialog}
+                setOpen={setUserRegisterDialog}
+                allDealer={allDealer}
+                allDriver={allDriver}
+                loading={loading}
+                setLoading={setLoading}
+            />
+
+            <UserDetailsDialog
+                open={openUserDetailsDialog}
+                setOpen={setOpenUserDetailsDialog}
+                user={userDetails}
+            />
+        </>
+    )
+}
+
+export default UserList; 
